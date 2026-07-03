@@ -72,6 +72,11 @@ class VaultDoc:
         value = self.metadata.get("tags", [])
         return value if isinstance(value, list) else []
 
+    @property
+    def codex_sessions(self) -> list[str]:
+        value = self.metadata.get("codex_sessions", [])
+        return value if isinstance(value, list) else []
+
 
 def vault_home(value: str | None = None) -> Path:
     if value:
@@ -144,6 +149,7 @@ def create_doc(
     title: str,
     repos: list[str],
     tags: list[str],
+    codex_sessions: list[str],
     status: str,
 ) -> Path:
     home = normalize_home(home)
@@ -163,6 +169,7 @@ def create_doc(
         "updated": created,
         "repos": repos,
         "tags": tags,
+        "codex_sessions": codex_sessions,
     }
     template = DECISION_TEMPLATE if kind == "decision" else SPEC_TEMPLATE
     content = render_frontmatter(metadata) + "\n" + template.format(title=title)
@@ -197,15 +204,28 @@ def unique_path(path: Path) -> Path:
 
 
 def render_frontmatter(metadata: dict[str, object]) -> str:
+    scalar_keys = ("id", "kind", "title", "status", "created", "updated")
+    list_keys = ("repos", "tags", "codex_sessions")
+    known = set(scalar_keys) | set(list_keys)
     lines = ["---"]
-    for key in ("id", "kind", "title", "status", "created", "updated"):
+    for key in scalar_keys:
         lines.append(f"{key}: {metadata.get(key, '')}")
-    for key in ("repos", "tags"):
+    for key in list_keys:
         values = metadata.get(key, [])
         lines.append(f"{key}:")
         if isinstance(values, list):
             for value in values:
                 lines.append(f"  - {value}")
+    for key in sorted(metadata):
+        if key in known:
+            continue
+        value = metadata[key]
+        if isinstance(value, list):
+            lines.append(f"{key}:")
+            for item in value:
+                lines.append(f"  - {item}")
+        else:
+            lines.append(f"{key}: {value}")
     lines.append("---")
     return "\n".join(lines)
 
@@ -270,6 +290,7 @@ def filter_docs(
     kind: str | None = None,
     repo: str | None = None,
     tag: str | None = None,
+    codex_session: str | None = None,
     status: str | None = None,
 ) -> list[VaultDoc]:
     filtered: list[VaultDoc] = []
@@ -279,6 +300,8 @@ def filter_docs(
         if repo and repo not in doc.repos:
             continue
         if tag and tag not in doc.tags:
+            continue
+        if codex_session and codex_session not in doc.codex_sessions:
             continue
         if status and doc.metadata.get("status") != status:
             continue
@@ -295,6 +318,31 @@ def find_doc(home: Path, ref: str) -> VaultDoc:
         if ref in {doc.id, doc.path.stem, doc.path.name}:
             return doc
     raise LookupError(f"no spec or decision found for {ref!r}")
+
+
+def append_codex_sessions(home: Path, ref: str, sessions: list[str]) -> VaultDoc:
+    if not sessions:
+        raise ValueError("at least one Codex session id is required")
+    doc = find_doc(home, ref)
+    metadata = dict(doc.metadata)
+    existing = doc.codex_sessions
+    metadata["codex_sessions"] = merge_unique(existing, sessions)
+    metadata["updated"] = today()
+    write_doc(doc.path, metadata, doc.body)
+    return read_doc(doc.path)
+
+
+def merge_unique(existing: Iterable[str], additions: Iterable[str]) -> list[str]:
+    result: list[str] = []
+    for value in [*existing, *additions]:
+        item = str(value).strip()
+        if item and item not in result:
+            result.append(item)
+    return result
+
+
+def write_doc(path: Path, metadata: dict[str, object], body: str) -> None:
+    path.write_text(render_frontmatter(metadata) + "\n" + body, encoding="utf-8")
 
 
 def write_index(home: Path) -> Path:
@@ -318,6 +366,7 @@ def index_record(home: Path, doc: VaultDoc) -> dict[str, object]:
         "updated": doc.updated,
         "repos": doc.repos,
         "tags": doc.tags,
+        "codex_sessions": doc.codex_sessions,
         "path": str(doc.path.relative_to(home)),
         "summary": first_content_line(doc.body),
     }

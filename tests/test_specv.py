@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -42,6 +43,8 @@ class SpecvCliTest(unittest.TestCase):
             "lippi-smart-customer,aics-web-repos",
             "--tags",
             "quality-analysis,contract",
+            "--codex-session",
+            "session-a,session-b",
         )
         path = Path(output.strip())
         doc = read_doc(path)
@@ -50,6 +53,7 @@ class SpecvCliTest(unittest.TestCase):
         self.assertEqual(doc.title, "质量分析展示契约")
         self.assertEqual(doc.repos, ["lippi-smart-customer", "aics-web-repos"])
         self.assertEqual(doc.tags, ["quality-analysis", "contract"])
+        self.assertEqual(doc.codex_sessions, ["session-a", "session-b"])
         self.assertTrue(doc.id.startswith("spec-"))
 
         self.run_cli("index")
@@ -59,6 +63,11 @@ class SpecvCliTest(unittest.TestCase):
         ]
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]["title"], "质量分析展示契约")
+        self.assertEqual(records[0]["codex_sessions"], ["session-a", "session-b"])
+
+        filtered = self.run_cli("list", "--codex-session", "session-b")
+        self.assertIn("session-a,session-b", filtered)
+        self.assertIn("质量分析展示契约", filtered)
 
     def test_decision_search_show_and_prime(self) -> None:
         self.run_cli(
@@ -90,6 +99,30 @@ class SpecvCliTest(unittest.TestCase):
         found = find_doc(self.home, path.stem)
 
         self.assertEqual(found.path, path)
+
+    def test_link_session_appends_multiple_sessions(self) -> None:
+        output = self.run_cli("new", "Cross repo lifecycle", "--codex-session", "session-a")
+        path = Path(output.strip())
+
+        self.run_cli("link-session", path.stem, "--codex-session", "session-b,session-a")
+        doc = read_doc(path)
+
+        self.assertEqual(doc.codex_sessions, ["session-a", "session-b"])
+        self.assertIn("codex_sessions:", path.read_text(encoding="utf-8"))
+
+    def test_current_codex_session_from_environment(self) -> None:
+        previous = os.environ.get("CODEX_THREAD_ID")
+        os.environ["CODEX_THREAD_ID"] = "thread-current"
+        try:
+            output = self.run_cli("decision", "Session-linked decision", "--current-codex-session")
+        finally:
+            if previous is None:
+                os.environ.pop("CODEX_THREAD_ID", None)
+            else:
+                os.environ["CODEX_THREAD_ID"] = previous
+
+        doc = read_doc(Path(output.strip()))
+        self.assertEqual(doc.codex_sessions, ["thread-current"])
 
 
 if __name__ == "__main__":

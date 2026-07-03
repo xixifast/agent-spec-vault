@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 
 from . import __version__
 from .vault import (
+    append_codex_sessions,
     create_doc,
     ensure_vault,
     filter_docs,
@@ -48,6 +50,10 @@ def build_parser() -> argparse.ArgumentParser:
     show_parser = subparsers.add_parser("show", help="Print one spec or decision.")
     show_parser.add_argument("ref", help="Document id, file name, or path.")
 
+    link_session_parser = subparsers.add_parser("link-session", help="Attach Codex session ids to one document.")
+    link_session_parser.add_argument("ref", help="Document id, file name, or path.")
+    add_session_args(link_session_parser)
+
     index_parser = subparsers.add_parser("index", help="Regenerate index.jsonl.")
     index_parser.add_argument("--print", action="store_true", help="Print index path after writing.")
 
@@ -63,13 +69,20 @@ def add_doc_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("title")
     parser.add_argument("--repo", "--repos", action="append", dest="repos", help="Repo name(s), comma-separated or repeated.")
     parser.add_argument("--tag", "--tags", action="append", dest="tags", help="Tag(s), comma-separated or repeated.")
+    add_session_args(parser)
     parser.add_argument("--status", default="active")
+
+
+def add_session_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--codex-session", action="append", dest="codex_sessions", help="Codex thread/session id(s), comma-separated or repeated.")
+    parser.add_argument("--current-codex-session", action="store_true", help="Attach CODEX_THREAD_ID from the current Codex run.")
 
 
 def add_filter_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--kind", choices=("all", "spec", "decision"), default="all")
     parser.add_argument("--repo")
     parser.add_argument("--tag")
+    parser.add_argument("--codex-session")
     parser.add_argument("--status")
 
 
@@ -90,6 +103,7 @@ def main(argv: list[str] | None = None) -> int:
                 title=args.title,
                 repos=split_values(args.repos),
                 tags=split_values(args.tags),
+                codex_sessions=session_values(args),
                 status=args.status,
             )
             print(path)
@@ -101,6 +115,7 @@ def main(argv: list[str] | None = None) -> int:
                 title=args.title,
                 repos=split_values(args.repos),
                 tags=split_values(args.tags),
+                codex_sessions=session_values(args),
                 status=args.status,
             )
             print(path)
@@ -124,6 +139,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "show":
             doc = find_doc(home, args.ref)
             print(doc.path.read_text(encoding="utf-8"), end="")
+            return 0
+        if args.command == "link-session":
+            doc = append_codex_sessions(home, args.ref, session_values(args))
+            print(doc.path)
             return 0
         if args.command == "index":
             path = write_index(home)
@@ -151,8 +170,19 @@ def filtered_docs(home, args):
         kind=getattr(args, "kind", "all"),
         repo=getattr(args, "repo", None),
         tag=getattr(args, "tag", None),
+        codex_session=getattr(args, "codex_session", None),
         status=getattr(args, "status", None),
     )
+
+
+def session_values(args) -> list[str]:
+    sessions = split_values(getattr(args, "codex_sessions", None))
+    if getattr(args, "current_codex_session", False):
+        current = os.environ.get("CODEX_THREAD_ID") or os.environ.get("CODEX_SESSION_ID")
+        if not current:
+            raise ValueError("CODEX_THREAD_ID is not set")
+        sessions = split_values([*sessions, current])
+    return sessions
 
 
 def print_list(home, docs) -> None:
@@ -163,8 +193,9 @@ def print_list(home, docs) -> None:
         path = doc.path.relative_to(home)
         repos = ",".join(doc.repos) or "-"
         tags = ",".join(doc.tags) or "-"
+        sessions = ",".join(doc.codex_sessions) or "-"
         status = doc.metadata.get("status", "-")
-        print(f"{doc.id}\t{doc.kind}\t{status}\t{doc.updated}\t{repos}\t{tags}\t{path}\t{doc.title}")
+        print(f"{doc.id}\t{doc.kind}\t{status}\t{doc.updated}\t{repos}\t{tags}\t{sessions}\t{path}\t{doc.title}")
 
 
 def print_prime(home, docs) -> None:
@@ -180,8 +211,10 @@ def print_prime(home, docs) -> None:
     for doc in docs:
         repos = ", ".join(doc.repos) or "global"
         tags = ", ".join(doc.tags) or "-"
+        sessions = ", ".join(doc.codex_sessions) or "-"
         path = doc.path.relative_to(home)
         print(f"- `{doc.id}` ({doc.kind}, {doc.metadata.get('status', '-')}) {doc.title}")
         print(f"  Path: `{path}`")
         print(f"  Repos: {repos}")
         print(f"  Tags: {tags}")
+        print(f"  Codex sessions: {sessions}")

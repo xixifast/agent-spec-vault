@@ -69,9 +69,13 @@ python3 -m specv --help
 specv init
 specv new "Quality analysis display contract" \
   --repos lippi-smart-customer,aics-web-repos,lippi-dingagent-graph-engine \
-  --tags quality-analysis,contract
+  --tags quality-analysis,contract \
+  --current-codex-session
 specv decision "Use Markdown vault instead of Beads for historical specs" \
-  --tags tooling,specs
+  --tags tooling,specs \
+  --codex-session 019f2767-c31f-7e31-b1e5-a0274051789d
+specv link-session spec-20260704-process-trace-running \
+  --codex-session 019f1111-example,019f2222-example
 specv list
 specv search "quality analysis"
 specv show spec-20260703-quality-analysis-display-contract
@@ -125,6 +129,8 @@ repos:
 tags:
   - quality-analysis
   - contract
+codex_sessions:
+  - 019f2767-c31f-7e31-b1e5-a0274051789d
 ---
 ```
 
@@ -137,6 +143,7 @@ tags:
 | `specv init` | Create the vault directories and templates |
 | `specv new <title>` | Create a new spec |
 | `specv decision <title>` | Create a decision note |
+| `specv link-session <ref>` | Attach one or more Codex session ids to a document |
 | `specv list` | List specs and decisions |
 | `specv search <query>` | Search metadata and Markdown body |
 | `specv show <id>` | Print one document |
@@ -162,6 +169,7 @@ This project does:
 - global spec and decision storage
 - Markdown-native files
 - frontmatter metadata for repos, tags, status, and dates
+- multiple Codex session links per spec or decision
 - JSONL index generation
 - agent-friendly summary output
 

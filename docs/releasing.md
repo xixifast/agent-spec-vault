@@ -24,10 +24,11 @@ Environment name: pypi
 
 ## Publish A Release
 
-Update the version in `pyproject.toml` and `specv/__init__.py`, commit it, then
-push a matching tag:
+Update the version in `pyproject.toml` and `specv/__init__.py`, run tests and
+metadata checks, commit it, then push a matching tag:
 
 ```bash
+python3 -m unittest discover -s tests -p 'test_*.py'
 git tag v<version>
 git push origin v<version>
 ```
