@@ -28,13 +28,16 @@ Update the version in `pyproject.toml` and `specv/__init__.py`, commit it, then
 push a matching tag:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v<version>
+git push origin v<version>
 ```
 
 After PyPI publishes the package, users should install it with:
 
 ```bash
-pipx install agent-spec-vault
+python3 -m pip install agent-spec-vault
 specv init
 ```
+
+`pipx install agent-spec-vault` is also a good option for users who want an
+isolated CLI install.

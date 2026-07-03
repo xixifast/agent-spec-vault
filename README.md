@@ -21,42 +21,28 @@ decisions that are global rather than tied to one repository.
 
 ## Install
 
-Recommended after the first PyPI release:
+For most Python environments:
+
+```bash
+python3 -m pip install agent-spec-vault
+specv init
+```
+
+If your Python installation blocks global CLI installs, or you prefer isolated
+command-line tools:
 
 ```bash
 pipx install agent-spec-vault
 specv init
 ```
 
-Plain `pip` will also work inside a virtual environment:
+Inside a virtual environment:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 python3 -m pip install agent-spec-vault
 specv init
-```
-
-One-line installer:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/xixifast/agent-spec-vault/main/scripts/install.sh | bash
-```
-
-Before the first PyPI release, the installer falls back to the GitHub source
-package automatically.
-
-Without `pipx`, the installer creates a private virtual environment at
-`~/.local/share/agent-spec-vault/venv` and links `specv` into `~/.local/bin`.
-The equivalent manual commands are:
-
-```bash
-python3 -m venv ~/.local/share/agent-spec-vault/venv
-~/.local/share/agent-spec-vault/venv/bin/python -m pip install --upgrade \
-  agent-spec-vault
-mkdir -p ~/.local/bin
-ln -sf ~/.local/share/agent-spec-vault/venv/bin/specv ~/.local/bin/specv
-~/.local/bin/specv init
 ```
 
 Unreleased development builds can still be installed from GitHub:
