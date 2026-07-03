@@ -24,7 +24,7 @@ decisions that are global rather than tied to one repository.
 Recommended, isolated CLI install:
 
 ```bash
-pipx install git+https://github.com/xixifast/agent-spec-vault.git
+pipx install agent-spec-vault
 specv init
 ```
 
@@ -33,7 +33,7 @@ Plain `pip` also works inside a virtual environment:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python3 -m pip install git+https://github.com/xixifast/agent-spec-vault.git
+python3 -m pip install agent-spec-vault
 specv init
 ```
 
@@ -43,9 +43,6 @@ One-line installer:
 curl -fsSL https://raw.githubusercontent.com/xixifast/agent-spec-vault/main/scripts/install.sh | bash
 ```
 
-If this project is later published to PyPI, the GitHub URL can become the plain
-package name, for example `pipx install agent-spec-vault`.
-
 Without `pipx`, the installer creates a private virtual environment at
 `~/.local/share/agent-spec-vault/venv` and links `specv` into `~/.local/bin`.
 The equivalent manual commands are:
@@ -53,10 +50,16 @@ The equivalent manual commands are:
 ```bash
 python3 -m venv ~/.local/share/agent-spec-vault/venv
 ~/.local/share/agent-spec-vault/venv/bin/python -m pip install --upgrade \
-  git+https://github.com/xixifast/agent-spec-vault.git
+  agent-spec-vault
 mkdir -p ~/.local/bin
 ln -sf ~/.local/share/agent-spec-vault/venv/bin/specv ~/.local/bin/specv
 ~/.local/bin/specv init
+```
+
+Unreleased development builds can still be installed from GitHub:
+
+```bash
+pipx install git+https://github.com/xixifast/agent-spec-vault.git
 ```
 
 For local development from a checkout:

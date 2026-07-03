@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -eu
 
-PACKAGE_SPEC="${PACKAGE_SPEC:-git+https://github.com/xixifast/agent-spec-vault.git}"
+PACKAGE_SPEC="${PACKAGE_SPEC:-agent-spec-vault}"
+SOURCE_PACKAGE_SPEC="${SOURCE_PACKAGE_SPEC:-git+https://github.com/xixifast/agent-spec-vault.git}"
 APP_HOME="${APP_HOME:-"$HOME/.local/share/agent-spec-vault"}"
 BIN_DIR="${BIN_DIR:-"$HOME/.local/bin"}"
 VENV_DIR="$APP_HOME/venv"
@@ -13,7 +14,13 @@ fi
 
 if command -v pipx >/dev/null 2>&1; then
   echo "Installing agent-spec-vault with pipx..."
-  pipx install --force "$PACKAGE_SPEC"
+  if ! pipx install --force "$PACKAGE_SPEC"; then
+    if [ "$PACKAGE_SPEC" = "$SOURCE_PACKAGE_SPEC" ]; then
+      exit 1
+    fi
+    echo "PyPI install failed; falling back to the GitHub source package..."
+    pipx install --force "$SOURCE_PACKAGE_SPEC"
+  fi
   if command -v specv >/dev/null 2>&1; then
     specv init
   elif [ -x "$BIN_DIR/specv" ]; then
@@ -28,7 +35,13 @@ fi
 echo "pipx was not found; installing into a private virtual environment..."
 python3 -m venv "$VENV_DIR"
 "$VENV_DIR/bin/python" -m pip install --upgrade pip >/dev/null
-"$VENV_DIR/bin/python" -m pip install --upgrade "$PACKAGE_SPEC"
+if ! "$VENV_DIR/bin/python" -m pip install --upgrade "$PACKAGE_SPEC"; then
+  if [ "$PACKAGE_SPEC" = "$SOURCE_PACKAGE_SPEC" ]; then
+    exit 1
+  fi
+  echo "PyPI install failed; falling back to the GitHub source package..."
+  "$VENV_DIR/bin/python" -m pip install --upgrade "$SOURCE_PACKAGE_SPEC"
+fi
 mkdir -p "$BIN_DIR"
 ln -sf "$VENV_DIR/bin/specv" "$BIN_DIR/specv"
 "$VENV_DIR/bin/specv" init
