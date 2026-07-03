@@ -21,14 +21,14 @@ decisions that are global rather than tied to one repository.
 
 ## Install
 
-Recommended, isolated CLI install:
+Recommended after the first PyPI release:
 
 ```bash
 pipx install agent-spec-vault
 specv init
 ```
 
-Plain `pip` also works inside a virtual environment:
+Plain `pip` will also work inside a virtual environment:
 
 ```bash
 python3 -m venv .venv
@@ -42,6 +42,9 @@ One-line installer:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/xixifast/agent-spec-vault/main/scripts/install.sh | bash
 ```
+
+Before the first PyPI release, the installer falls back to the GitHub source
+package automatically.
 
 Without `pipx`, the installer creates a private virtual environment at
 `~/.local/share/agent-spec-vault/venv` and links `specv` into `~/.local/bin`.
